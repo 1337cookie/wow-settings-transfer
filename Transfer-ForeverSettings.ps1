@@ -7,32 +7,12 @@
 .DESCRIPTION
     Standalone PowerShell script designed to run directly from local file or URL via IEX.
     - Self-elevates to Administrator (with automatic temporary file caching when run via IEX)
-    - Hides console/terminal window
     - Embeds logo.png as binary base64 for window icon and header display
     - Clean greyscale background with crisp white typography
 #>
 
 # =========================================================================
-# Step 1: Hide Console Window
-# =========================================================================
-try {
-    if (-not ([System.Management.Automation.PSTypeName]'Win32Internal.WinAPI').Type) {
-        Add-Type -Name WinAPI -Namespace Win32Internal -MemberDefinition '
-        [DllImport("Kernel32.dll")]
-        public static extern IntPtr GetConsoleWindow();
-
-        [DllImport("user32.dll")]
-        public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
-        '
-    }
-    $hConsole = [Win32Internal.WinAPI]::GetConsoleWindow()
-    if ($hConsole -ne [IntPtr]::Zero) {
-        [Win32Internal.WinAPI]::ShowWindow($hConsole, 0) | Out-Null
-    }
-} catch {}
-
-# =========================================================================
-# Step 2: Administrator Elevation Check (with IEX In-Memory Support)
+# Step 1: Administrator Elevation Check (with IEX In-Memory Support)
 # =========================================================================
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
@@ -53,9 +33,8 @@ if (-not $isAdmin) {
     try {
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "powershell.exe"
-        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$scriptToRun`""
+        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$scriptToRun`""
         $psi.Verb = "RunAs"
-        $psi.WindowStyle = [System.Diagnostics.ProcessWindowStyle]::Hidden
         $psi.UseShellExecute = $true
         [System.Diagnostics.Process]::Start($psi) | Out-Null
     } catch {
@@ -70,7 +49,7 @@ if (-not $isAdmin) {
 }
 
 # =========================================================================
-# Step 3: Assemblies and Embedded Binary Assets
+# Step 2: Assemblies and Embedded Binary Assets
 # =========================================================================
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
